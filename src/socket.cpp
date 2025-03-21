@@ -1,4 +1,4 @@
-#include <exception>
+#include <stdexcept>
 #include "../include/socket.hpp"
 
 namespace sockets {
