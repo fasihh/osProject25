@@ -9,8 +9,6 @@ int main() {
 	client.connect("127.0.0.1", 8080);
 
 	cout << client.send("Hello Server!") << endl;
-	string response = client.recv();
-	cout << response << endl;
 
 	return 0;
 }
