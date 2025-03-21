@@ -1,8 +1,6 @@
 #pragma once
 
-#include <exception>
 #include <string>
-#include <utility>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -20,8 +18,6 @@ namespace sockets {
         int opt;
         sockaddr_in_t address;
         socklen_t address_len;
-
-        char buffer[BUFSIZ];
     public:
         Socket(const int domain, const int type, const int protocol = 0);
         ~Socket();

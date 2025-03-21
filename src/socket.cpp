@@ -1,4 +1,5 @@
-#include <iostream>
+#include <exception>
+#include <iterator>
 #include "../include/socket.hpp"
 
 namespace sockets {
@@ -47,12 +48,13 @@ namespace sockets {
         if (buffer_size > BUFSIZ)
             throw std::length_error("Socket: Buffer size exceeds maximum limit");
 
+        char buffer[buffer_size] = {0};
         ssize_t bytes_read = (this->sock > 0)
-            ? ::read(this->sock, this->buffer, buffer_size) // receive from client
-            : ::read(this->fd, this->buffer, buffer_size);  // receive from server
+            ? ::read(this->sock, buffer, buffer_size) // receive from client
+            : ::read(this->fd, buffer, buffer_size);  // receive from server
         if (bytes_read >= 0)
-            this->buffer[bytes_read] = '\0';
-        return std::string(this->buffer);
+            buffer[bytes_read] = '\0';
+        return std::string(buffer);
     }
 
     ssize_t Socket::send(const std::string message) {
