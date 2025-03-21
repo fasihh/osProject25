@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef SOCKET_H
+#define SOCKET_H
+
 #include <string>
 #include <utility>
 #include <unistd.h>
@@ -7,13 +10,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-typedef struct sockaddr_in sockaddr_in_t;
-typedef struct sockaddr sockaddr_t;
-typedef std::pair<std::string, in_port_t> addr_p_t;
-
 namespace os_sock {
+    typedef struct sockaddr_in sockaddr_in_t;
+    typedef struct sockaddr sockaddr_t;
+    typedef std::pair<std::string, in_port_t> addr_p_t;
+
     class Socket {
-   private:
+    private:
         int fd = -1;
         int sock = -1;
         int domain;
@@ -38,3 +41,5 @@ namespace os_sock {
         bool operator==(const Socket& obj) const;
     };
 };
+
+#endif
