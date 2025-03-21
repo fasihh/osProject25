@@ -11,7 +11,7 @@ typedef struct sockaddr_in sockaddr_in_t;
 typedef struct sockaddr sockaddr_t;
 typedef std::pair<std::string, in_port_t> addr_p_t;
 
-namespace sockets {
+namespace os_sock {
     class Socket {
    private:
         int fd = -1;

@@ -4,7 +4,7 @@
 using namespace std;
 
 int main() {
-	sockets::Socket client(AF_INET, SOCK_STREAM);
+	os_sock::Socket client(AF_INET, SOCK_STREAM);
 
 	client.connect("127.0.0.1", 8080);
 

@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include "../include/socket.hpp"
 
-namespace sockets {
+namespace os_sock {
     Socket::Socket(const int domain, const int type, const int protocol) 
         : domain(domain), opt(1), address_len(sizeof(address)) {
         this->fd = socket(domain, type, protocol);
