@@ -1,3 +1,4 @@
+#include <iostream>
 #include <stdexcept>
 #include "../include/socket.hpp"
 
@@ -8,6 +9,9 @@ namespace sockets {
         if (this->fd < 0)
             throw std::runtime_error("Socket: socket creation failed");
     }
+
+    Socket::Socket(int sock, int domain, sockaddr_in_t address)
+        : sock(sock), domain(domain), address(address), address_len(sizeof(address)) {}
 
     void Socket::bind(const std::string host, int port) {
         if (setsockopt(this->fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &this->opt, sizeof(this->opt)))
@@ -26,10 +30,19 @@ namespace sockets {
             throw std::runtime_error("Socket: failed to listen");
     }
 
-    void Socket::accept() {
-        this->sock = ::accept(this->fd, (sockaddr_t*)&this->address, &this->address_len);
-        if (this->sock < 0)
-            throw std::runtime_error("Socket: accept failed");
+    std::pair<Socket, addr_p_t> Socket::accept() {
+        sockaddr_in_t client_address;
+        socklen_t client_len = sizeof(client_address);
+        int client_fd = ::accept(this->fd, (sockaddr_t*)&client_address, &client_len);
+
+        if (client_fd < 0) {
+            perror("Socket: accept failed");
+            throw std::runtime_error("Socket accept failed");
+        }
+
+        char address_buffer[INET_ADDRSTRLEN];
+        inet_ntop(this->domain, &(client_address.sin_addr), address_buffer, INET_ADDRSTRLEN);
+        return {Socket(client_fd, this->domain, client_address), {std::string(address_buffer), client_address.sin_port}};
     }
 
     void Socket::connect(const std::string host, int port) {
@@ -48,21 +61,39 @@ namespace sockets {
             throw std::length_error("Socket: Buffer size exceeds maximum limit");
 
         char buffer[buffer_size] = {0};
-        ssize_t bytes_read = (this->sock > 0)
+        ssize_t bytes_read = this->sock > 0
             ? ::read(this->sock, buffer, buffer_size) // receive from client
-            : ::read(this->fd, buffer, buffer_size);  // receive from server
-        if (bytes_read >= 0)
-            buffer[bytes_read] = '\0';
+            : this->fd > 0
+                ? ::read(this->fd, buffer, buffer_size)  // receive from server
+                : -1;
+        
+        if (bytes_read < 0)
+            throw std::runtime_error("Socket: Error receiving data");
+            
+        buffer[bytes_read] = '\0';
         return std::string(buffer);
     }
 
     ssize_t Socket::send(const std::string message) {
-        return (this->sock > 0)
-            ? ::send(this->sock, message.c_str(), message.size(), 0) // send to client
-            : ::send(this->fd, message.c_str(), message.size(), 0);  // send to server
+        if (this->sock > 0)
+            return ::send(this->sock, message.c_str(), message.size(), 0); // send to client
+        
+        if (this->fd > 0)
+            return ::send(this->fd, message.c_str(), message.size(), 0); // send to server
+
+        return -1;
+    }
+
+    void Socket::close() {
+        if (this->fd != -1)
+            ::close(this->fd);
     }
 
     Socket::~Socket() {
-        ::close(this->fd);
+        this->close();
+    }
+
+    bool Socket::operator==(const Socket& obj) const {
+        return obj.fd == this->fd || obj.sock == this->sock;
     }
 }
