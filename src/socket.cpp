@@ -1,44 +1,42 @@
 #include <iostream>
 #include <stdexcept>
-#include "../include/socket.hpp"
+#include <socket.hpp>
 
 namespace os_sock {
     Socket::Socket(const int domain, const int type, const int protocol) 
         : domain(domain), opt(1), address_len(sizeof(address)) {
         this->fd = socket(domain, type, protocol);
         if (this->fd < 0)
-            throw std::runtime_error("Socket: socket creation failed");
+            throw std::runtime_error("Socket: Socket creation failed");
     }
 
-    Socket::Socket(int sock, int domain, sockaddr_in_t address)
+    Socket::Socket(int sock, int domain, os_sock::sockaddr_in_t address)
         : sock(sock), domain(domain), address(address), address_len(sizeof(address)) {}
 
     void Socket::bind(const std::string host, int port) {
         if (setsockopt(this->fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &this->opt, sizeof(this->opt)))
-            throw std::runtime_error("Socket: binding failed [setsockopt]");
+            throw std::runtime_error("Socket: Binding failed [setsockopt]");
 
         this->address.sin_family = this->domain;
         this->address.sin_addr.s_addr = inet_addr(host.c_str());
         this->address.sin_port = htons(port);
 
-        if (::bind(this->fd, (sockaddr_t*)&this->address, sizeof(this->address)) < 0)
-            throw std::runtime_error("Socket: binding failed");
+        if (::bind(this->fd, (os_sock::sockaddr_t*)&this->address, sizeof(this->address)) < 0)
+            throw std::runtime_error("Socket: Binding failed");
     }
 
     void Socket::listen(int backlog) {
         if (::listen(this->fd, backlog) < 0)
-            throw std::runtime_error("Socket: failed to listen");
+            throw std::runtime_error("Socket: Failed to listen");
     }
 
-    std::pair<Socket, addr_p_t> Socket::accept() {
-        sockaddr_in_t client_address;
+    std::pair<Socket, os_sock::addr_p_t> Socket::accept() {
+        os_sock::sockaddr_in_t client_address;
         socklen_t client_len = sizeof(client_address);
-        int client_fd = ::accept(this->fd, (sockaddr_t*)&client_address, &client_len);
+        int client_fd = ::accept(this->fd, (os_sock::sockaddr_t*)&client_address, &client_len);
 
-        if (client_fd < 0) {
-            perror("Socket: accept failed");
-            throw std::runtime_error("Socket accept failed");
-        }
+        if (client_fd < 0)
+            throw std::runtime_error("Socket: Accept failed");
 
         char address_buffer[INET_ADDRSTRLEN];
         inet_ntop(this->domain, &(client_address.sin_addr), address_buffer, INET_ADDRSTRLEN);
@@ -51,7 +49,7 @@ namespace os_sock {
         if (inet_pton(this->domain, host.c_str(), &this->address.sin_addr) <= 0)
             throw std::runtime_error("Socket: Invalid address or address not supported");
 
-        this->sock = ::connect(this->fd, (sockaddr_t*)&this->address, sizeof(this->address));
+        this->sock = ::connect(this->fd, (os_sock::sockaddr_t*)&this->address, sizeof(this->address));
         if (this->sock < 0)
             throw std::runtime_error("Socket: Connection failed");
     }
