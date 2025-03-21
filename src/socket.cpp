@@ -1,5 +1,4 @@
 #include <exception>
-#include <iterator>
 #include "../include/socket.hpp"
 
 namespace sockets {
