@@ -9,6 +9,10 @@ namespace os_sock {
         return out;
     }
 
+    bool SocketAddress::operator==(const SocketAddress& obj) {
+        return obj.host == this->host && obj.port == this->port;
+    }
+
     Socket::Socket(const int domain, const int type, const int protocol) 
         : domain(domain), opt(1), address_len(sizeof(address)) {
         this->fd = socket(domain, type, protocol);
@@ -92,6 +96,7 @@ namespace os_sock {
             ssize_t bytes_sent = ::send(this->fd, message.c_str(), message.size(), 0); // send to server
             if (bytes_sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
                 return 0;
+            return bytes_sent;
         }
 
         throw std::runtime_error("Socket: Error sending data");
