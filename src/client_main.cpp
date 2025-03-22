@@ -1,82 +1,82 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include <socket.hpp>
 #include <mutex>
 #include <atomic>
-#include <functional>
-#include <memory>
-#include <socket.hpp>
 
-std::mutex client_mutex;
-std::atomic<bool> error_status(false);
-std::thread read_t, write_t;
+std::mutex console_mutex;
+std::atomic<bool> is_running(true);
 
-void receive_messages(std::shared_ptr<os_sock::Socket> client_socket) {
+void receive_messages(os_sock::Socket& client_socket) {
     try {
-        while (!error_status) {
-            std::lock_guard<std::mutex> lock(client_mutex);
-            try {
-                std::string response = client_socket->recv();
-                if (response.empty())
-                    continue;
-                std::cout << ">> " << response << "\n";
-            } catch (const std::runtime_error& err) {
-                if (std::string(err.what()).find("Connection closed") == std::string::npos)
-                    throw;
-                std::cout << "Connection closed by peer.\n";
+        while (is_running) {
+            std::string response = client_socket.recv();
+            if (response.empty()) {
+                std::lock_guard<std::mutex> lock(console_mutex);
+                std::cerr << "Server disconnected." << std::endl;
+                is_running = false;
                 break;
             }
+            std::lock_guard<std::mutex> lock(console_mutex);
+            std::cout << "Server: " << response << std::endl;
         }
-    } catch (std::exception& err) {
-        std::cout << "receive_messages | " << err.what() << std::endl;
-        error_status = true;
-    }
-}
-
-void send_messages(std::shared_ptr<os_sock::Socket> client_socket) {
-    std::string buffer;
-    try {
-        while (!error_status) {
-            std::cout << "<< ";
-            std::getline(std::cin, buffer);
-            if (buffer.size() > BUFSIZ)
-                buffer = buffer.substr(BUFSIZ);
-    
-            if (buffer == ":quit")
-                break;
-    
-            std::lock_guard<std::mutex> lock(client_mutex);
-            client_socket->send(buffer);
-        }
-    } catch (std::exception& err) {
-        std::cout << "send_messages | " << err.what() << std::endl;
-        error_status = true;
+    } catch (const std::exception& err) {
+        std::lock_guard<std::mutex> lock(console_mutex);
+        std::cerr << "receive_messages | Exception: " << err.what() << std::endl;
+    } catch (...) {
+        std::lock_guard<std::mutex> lock(console_mutex);
+        std::cerr << "receive_messages | Unexpected error occurred." << std::endl;
     }
 }
 
 int main() {
-	auto client = std::make_shared<os_sock::Socket>(AF_INET, SOCK_STREAM);
-    client->connect("127.0.0.1", 8080);
+    try {
+        os_sock::Socket client_socket(AF_INET, SOCK_STREAM);
+        client_socket.connect("127.0.0.1", 8080);
 
-    read_t = std::move(std::thread(receive_messages, client));
-    write_t = std::move(std::thread(send_messages, client));
+        {
+            std::lock_guard<std::mutex> lock(console_mutex);
+            std::cout << "Connected to the server!" << std::endl;
+        }
 
-    if (read_t.joinable())
-        read_t.join();
-    if (write_t.joinable())
-        write_t.join();
+        std::thread listener_thread(receive_messages, std::ref(client_socket));
 
-    // try {
-        
-    // } catch (std::exception& err) {
-    //     std::cout << "main | " << err.what() << std::endl;
-    //     client.close();
-    //     exit(EXIT_FAILURE);
-    // } catch (...) {
-    //     std::cout << "main | unexpected error" << std::endl;
-    //     client.close();
-    //     exit(EXIT_FAILURE);
-    // }
+        std::string message;
+        while (is_running) {
+            std::getline(std::cin, message);
 
-	return 0;
+            if (message == "/exit") {
+                is_running = false;
+                break;
+            }
+
+            try {
+                client_socket.send(message);
+            } catch (const std::exception& err) {
+                std::lock_guard<std::mutex> lock(console_mutex);
+                std::cerr << "main | Send exception: " << err.what() << std::endl;
+                break;
+            } catch (...) {
+                std::lock_guard<std::mutex> lock(console_mutex);
+                std::cerr << "main | Unexpected error during send." << std::endl;
+                break;
+            }
+        }
+
+        is_running = false;
+        client_socket.close();
+        if (listener_thread.joinable()) {
+            listener_thread.join();
+        }
+
+    } catch (const std::exception& err) {
+        std::lock_guard<std::mutex> lock(console_mutex);
+        std::cerr << "main | Exception: " << err.what() << std::endl;
+    } catch (...) {
+        std::lock_guard<std::mutex> lock(console_mutex);
+        std::cerr << "main | Unexpected error occurred." << std::endl;
+    }
+
+    return 0;
 }
