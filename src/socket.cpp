@@ -61,9 +61,9 @@ namespace os_sock {
     
         char buffer[buffer_size] = {0};
         ssize_t bytes_read = this->sock > 0
-            ? ::read(this->sock, buffer, buffer_size) // receive from client
+            ? ::recv(this->sock, buffer, buffer_size, 0) // receive from client
             : this->fd > 0
-                ? ::read(this->fd, buffer, buffer_size)  // receive from server
+                ? ::recv(this->fd, buffer, buffer_size, 0)  // receive from server
                 : -1;
         
         if (bytes_read < 0) {
@@ -89,7 +89,7 @@ namespace os_sock {
                 return 0;
         }
 
-        return -1;
+        throw std::runtime_error("Socket: Error sending data");
     }
 
     void Socket::set_non_blocking(bool status) {

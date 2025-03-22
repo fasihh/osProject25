@@ -31,18 +31,13 @@ void broadcast(const std::string& message, os_sock::Socket& sender) {
     for (auto& [client, address] : clients) {
         if (client == sender)
             continue;
-        ssize_t bytes_sent = client.send(message);
-        if (bytes_sent < 0)
-            throw std::runtime_error("broadcast: error sending message");
+        client.send(message);
     }
 }
 
 void handle_client(os_sock::Socket client_socket, os_sock::addr_p_t client_address) {
-    ssize_t bytes_sent = client_socket.send("Welcome!");
-    if (bytes_sent < 0)
-        throw std::runtime_error("handle_client: error sending message to client");
-    
     try {
+        client_socket.send("Welcome!");
         while (true) {
             std::string response = client_socket.recv();
             if (response.empty())
