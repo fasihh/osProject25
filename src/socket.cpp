@@ -4,15 +4,6 @@
 #include <socket.hpp>
 
 namespace os_sock {
-    std::ostream& operator<<(std::ostream& out, const SocketAddress& obj) {
-        out << obj.host << ":" << obj.port;
-        return out;
-    }
-
-    bool SocketAddress::operator==(const SocketAddress& obj) {
-        return obj.host == this->host && obj.port == this->port;
-    }
-
     Socket::Socket(const int domain, const int type, const int protocol) 
         : domain(domain), opt(1), address_len(sizeof(address)) {
         this->fd = socket(domain, type, protocol);

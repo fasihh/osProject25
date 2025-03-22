@@ -10,18 +10,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <socket-address.hpp>
 
 namespace os_sock {
     typedef struct sockaddr_in sockaddr_in_t;
     typedef struct sockaddr sockaddr_t;
-
-    struct SocketAddress {
-        std::string host;
-        in_port_t port;
-
-        friend std::ostream& operator<<(std::ostream& out, const SocketAddress& obj);
-        bool operator==(const SocketAddress& obj);
-    };
 
     class Socket {
     private:
