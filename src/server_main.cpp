@@ -7,20 +7,15 @@
 #include <mutex>
 #include <socket.hpp>
 
-std::vector<std::pair<os_sock::Socket, os_sock::addr_p_t>> clients;
+std::vector<std::pair<os_sock::Socket, os_sock::SocketAddress>> clients;
 std::mutex client_mutex;
-
-std::ostream& operator<<(std::ostream& out, const os_sock::addr_p_t& addr_p) {
-    out << addr_p.first << ":" << addr_p.second;
-    return out;
-}
 
 void remove_client(os_sock::Socket& client_socket) {
     std::lock_guard<std::mutex> lock(client_mutex);
     std::remove_if(
         clients.begin(),
         clients.end(),
-        [&](const std::pair<os_sock::Socket, os_sock::addr_p_t>& client) {
+        [&](const std::pair<os_sock::Socket, os_sock::SocketAddress>& client) {
             return client.first == client_socket;
         }
     );
@@ -35,7 +30,7 @@ void broadcast(const std::string& message, os_sock::Socket& sender) {
     }
 }
 
-void handle_client(os_sock::Socket client_socket, os_sock::addr_p_t client_address) {
+void handle_client(os_sock::Socket client_socket, os_sock::SocketAddress client_address) {
     try {
         client_socket.send("Welcome!");
         while (true) {

@@ -3,6 +3,7 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
+#include <iostream>
 #include <string>
 #include <utility>
 #include <unistd.h>
@@ -13,7 +14,13 @@
 namespace os_sock {
     typedef struct sockaddr_in sockaddr_in_t;
     typedef struct sockaddr sockaddr_t;
-    typedef std::pair<std::string, in_port_t> addr_p_t;
+
+    struct SocketAddress {
+        std::string host;
+        in_port_t port;
+
+        friend std::ostream& operator<<(std::ostream& out, const SocketAddress& obj);
+    };
 
     class Socket {
     private:
@@ -30,11 +37,11 @@ namespace os_sock {
 
         void bind(const std::string host, int port);
         void listen(int backlog);
-        std::pair<Socket, addr_p_t> accept();
-        void connect(const std::string host, int port);
+        std::pair<Socket, SocketAddress> accept();
+        void connect(const std::string& host, int port);
 
         std::string recv(const ssize_t buffer_size=BUFSIZ);
-        ssize_t send(const std::string message);
+        ssize_t send(const std::string& message);
 
         void set_non_blocking(bool status);
         void close();

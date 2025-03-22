@@ -4,6 +4,11 @@
 #include <socket.hpp>
 
 namespace os_sock {
+    std::ostream& operator<<(std::ostream& out, const SocketAddress& obj) {
+        out << obj.host << ":" << obj.port;
+        return out;
+    }
+
     Socket::Socket(const int domain, const int type, const int protocol) 
         : domain(domain), opt(1), address_len(sizeof(address)) {
         this->fd = socket(domain, type, protocol);
@@ -31,7 +36,7 @@ namespace os_sock {
             throw std::runtime_error("Socket: Failed to listen");
     }
 
-    std::pair<Socket, os_sock::addr_p_t> Socket::accept() {
+    std::pair<Socket, os_sock::SocketAddress> Socket::accept() {
         os_sock::sockaddr_in_t client_address;
         socklen_t client_len = sizeof(client_address);
         int client_fd = ::accept(this->fd, (os_sock::sockaddr_t*)&client_address, &client_len);
@@ -44,7 +49,7 @@ namespace os_sock {
         return {Socket(client_fd, this->domain, client_address), {std::string(address_buffer), client_address.sin_port}};
     }
 
-    void Socket::connect(const std::string host, int port) {
+    void Socket::connect(const std::string& host, int port) {
         this->address.sin_family = this->domain;
         this->address.sin_port = htons(port);
         if (inet_pton(this->domain, host.c_str(), &this->address.sin_addr) <= 0)
@@ -56,8 +61,8 @@ namespace os_sock {
     }
 
     std::string Socket::recv(const ssize_t buffer_size) {
-        if (buffer_size > BUFSIZ)
-            throw std::length_error("Socket: Buffer size exceeds maximum limit");
+        if (buffer_size <= 0 || buffer_size > BUFSIZ)
+            throw std::length_error("Socket: Invalid buffer size");
     
         char buffer[buffer_size] = {0};
         ssize_t bytes_read = this->sock > 0
@@ -79,7 +84,7 @@ namespace os_sock {
     }
     
 
-    ssize_t Socket::send(const std::string message) {
+    ssize_t Socket::send(const std::string& message) {
         if (this->sock > 0)
             return ::send(this->sock, message.c_str(), message.size(), 0); // send to client
         
