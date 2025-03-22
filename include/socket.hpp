@@ -36,6 +36,7 @@ namespace os_sock {
         std::string recv(const ssize_t buffer_size=BUFSIZ);
         ssize_t send(const std::string message);
 
+        void set_non_blocking(bool status);
         void close();
 
         bool operator==(const Socket& obj) const;

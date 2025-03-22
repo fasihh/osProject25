@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdexcept>
+#include <fcntl.h>
 #include <socket.hpp>
 
 namespace os_sock {
@@ -57,29 +58,56 @@ namespace os_sock {
     std::string Socket::recv(const ssize_t buffer_size) {
         if (buffer_size > BUFSIZ)
             throw std::length_error("Socket: Buffer size exceeds maximum limit");
-
-        char buffer[buffer_size] = {0};
-        ssize_t bytes_read = this->sock > 0
-            ? ::read(this->sock, buffer, buffer_size) // receive from client
-            : this->fd > 0
-                ? ::read(this->fd, buffer, buffer_size)  // receive from server
-                : -1;
-        
-        if (bytes_read < 0)
-            throw std::runtime_error("Socket: Error receiving data");
-            
-        buffer[bytes_read] = '\0';
-        return std::string(buffer);
+    
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(this->fd, &read_fds);
+    
+        struct timeval timeout = {1, 0};
+        int result = select(this->fd + 1, &read_fds, NULL, NULL, &timeout);
+    
+        if (result > 0 && FD_ISSET(this->fd, &read_fds)) {
+            char buffer[buffer_size] = {0};
+            ssize_t bytes_read = ::recv(this->fd, buffer, buffer_size, 0);
+            if (bytes_read < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                    return "";
+                throw std::runtime_error("Socket: Error receiving data");
+            }
+            return std::string(buffer, bytes_read);
+        } else if (result == 0) {
+            // Timeout
+            return "";
+        } else {
+            throw std::runtime_error("Socket: select() error");
+        }
     }
 
     ssize_t Socket::send(const std::string message) {
         if (this->sock > 0)
             return ::send(this->sock, message.c_str(), message.size(), 0); // send to client
         
-        if (this->fd > 0)
-            return ::send(this->fd, message.c_str(), message.size(), 0); // send to server
+        if (this->fd > 0) {
+            ssize_t bytes_sent = ::send(this->fd, message.c_str(), message.size(), 0); // send to server
+            if (bytes_sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+                return 0;
+        }
 
         return -1;
+    }
+
+    void Socket::set_non_blocking(bool status) {
+        int flags = ::fcntl(this->fd, F_GETFL, 0);
+        if (flags < 0)
+            throw std::runtime_error("Socket: Failed to fetch fd flags");
+        
+        if (status)
+            flags |= O_NONBLOCK;
+        else
+            flags &= ~O_NONBLOCK;
+        
+        if (::fcntl(this->fd, F_SETFL, flags) < 0)
+            throw std::runtime_error("Socket: failed to set fd flags");
     }
 
     void Socket::close() {
