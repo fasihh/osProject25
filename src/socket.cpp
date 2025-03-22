@@ -124,8 +124,4 @@ namespace os_sock {
     Socket::~Socket() {
         this->close();
     }
-
-    bool Socket::operator==(const Socket& obj) const {
-        return obj.fd == this->fd || obj.sock == this->sock;
-    }
 }

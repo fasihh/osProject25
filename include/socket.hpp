@@ -46,8 +46,6 @@ namespace os_sock {
 
         void set_non_blocking(bool status);
         void close();
-
-        bool operator==(const Socket& obj) const;
     };
 };
 
