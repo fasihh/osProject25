@@ -4,7 +4,6 @@
 #include <vector.h>
 #include "socket.h"
 
-// Structure to hold client information
 typedef struct client_info
 {
   socket_t *socket;

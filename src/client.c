@@ -64,11 +64,9 @@ int main()
   printf("Connected to the server!\n");
   pthread_mutex_unlock(&console_mutex);
 
-  // Create thread arguments
   thread_args args = {
       .socket = client_socket};
 
-  // Create listener thread
   pthread_t listener_thread;
   if (pthread_create(&listener_thread, NULL, receive_messages, &args) != 0)
   {
@@ -85,7 +83,6 @@ int main()
       break;
     }
 
-    // Remove trailing newline
     size_t len = strlen(message);
     if (len > 0 && message[len - 1] == '\n')
     {
@@ -108,7 +105,6 @@ int main()
     }
   }
 
-  // Cleanup
   is_running = false;
   socket_close(client_socket);
 
