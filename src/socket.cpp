@@ -107,6 +107,8 @@ namespace os_sock {
             throw std::runtime_error("Socket: failed to set fd flags");
     }
 
+    int Socket::get_fd() const { return this->fd; }
+
     void Socket::close() {
         if (this->fd != -1)
             ::close(this->fd);

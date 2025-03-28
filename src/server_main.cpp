@@ -5,7 +5,6 @@
 #include <functional>
 #include <thread>
 #include <mutex>
-#include <signal.h>
 #include <socket.hpp>
 
 std::vector<std::pair<os_sock::Socket, os_sock::SocketAddress>> clients;

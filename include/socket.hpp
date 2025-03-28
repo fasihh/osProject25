@@ -38,6 +38,7 @@ namespace os_sock {
         ssize_t send(const std::string& message);
 
         void set_non_blocking(bool status);
+        int get_fd() const;
         void close();
     };
 };
