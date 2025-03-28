@@ -40,7 +40,7 @@ void broadcast(const char *message, size_t msg_len, socket_address *sender_addr)
   {
     client_info *client = clients.pf_vector_get(&clients, i);
     if (client->address.port == sender_addr->port &&
-        strcmp(client->address.host, sender_addr->host) == 0)
+      strcmp(client->address.host, sender_addr->host) == 0)
     {
       continue;
     }
@@ -56,7 +56,6 @@ void *handle_client(void *arg)
   socket_t *client_sock = client->socket;
   socket_address client_addr = client->address;
 
-  // Send welcome message
   const char *welcome = "Welcome!";
   socket_send(client_sock, welcome, strlen(welcome));
 
