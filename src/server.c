@@ -35,7 +35,7 @@ void remove_client(socket_address *client_addr)
   pthread_mutex_unlock(&client_mutex);
 }
 
-void broadcast(const char *message, const char *sender_name)
+void broadcast(const char *message, const char *sender_name, socket_address *sender_addr)
 {
   pthread_mutex_lock(&client_mutex);
 
@@ -45,11 +45,18 @@ void broadcast(const char *message, const char *sender_name)
   for (size_t i = 0; i < clients.vector_list.total; i++)
   {
     client_info *client = clients.pf_vector_get(&clients, i);
+
+    // Skip the sender by address
+    if (client->address.port == sender_addr->port &&
+        strcmp(client->address.host, sender_addr->host) == 0)
+      continue;
+
     socket_send(client->socket, formatted_msg, strlen(formatted_msg));
   }
 
   pthread_mutex_unlock(&client_mutex);
 }
+
 
 void *handle_client(void *arg)
 {
@@ -94,13 +101,13 @@ void *handle_client(void *arg)
     {
       char left_msg[128];
       snprintf(left_msg, sizeof(left_msg), "%s has left the chat.", client->username);
-      broadcast(left_msg, "Server");
+      broadcast(left_msg, "Server", &client->address);
       free(response);
       break;
     }
 
     printf("[%s] %s\n", client->username, response);
-    broadcast(response, client->username);
+    broadcast(response, client->username, &client->address);
     free(response);
   }
 
