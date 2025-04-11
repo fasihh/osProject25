@@ -4,10 +4,13 @@
 #include <vector.h>
 #include "socket.h"
 
+#define USERNAME_MAX 32
+
 typedef struct client_info
 {
   socket_t *socket;
   socket_address address;
+  char username[USERNAME_MAX];
 } client_info;
 
 VECTOR_DEFINE(clients);
@@ -32,19 +35,17 @@ void remove_client(socket_address *client_addr)
   pthread_mutex_unlock(&client_mutex);
 }
 
-void broadcast(const char *message, size_t msg_len, socket_address *sender_addr)
+void broadcast(const char *message, const char *sender_name)
 {
   pthread_mutex_lock(&client_mutex);
+
+  char formatted_msg[1024];
+  snprintf(formatted_msg, sizeof(formatted_msg), "[%s] %s", sender_name, message);
 
   for (size_t i = 0; i < clients.vector_list.total; i++)
   {
     client_info *client = clients.pf_vector_get(&clients, i);
-    if (client->address.port == sender_addr->port &&
-      strcmp(client->address.host, sender_addr->host) == 0)
-    {
-      continue;
-    }
-    socket_send(client->socket, message, msg_len);
+    socket_send(client->socket, formatted_msg, strlen(formatted_msg));
   }
 
   pthread_mutex_unlock(&client_mutex);
@@ -56,7 +57,26 @@ void *handle_client(void *arg)
   socket_t *client_sock = client->socket;
   socket_address client_addr = client->address;
 
-  const char *welcome = "Welcome!";
+  // Receive username
+  ssize_t name_len;
+  char *username = socket_recv(client_sock, USERNAME_MAX, &name_len);
+
+  if (!username || name_len <= 0)
+  {
+    fprintf(stderr, "Failed to receive username from %s:%d\n", client_addr.host, client_addr.port);
+    socket_destroy(client_sock);
+    free(client_addr.host);
+    free(client);
+    return NULL;
+  }
+
+  strncpy(client->username, username, USERNAME_MAX);
+  client->username[USERNAME_MAX - 1] = '\0';
+  free(username);
+
+  printf("%s (%s:%d) joined.\n", client->username, client_addr.host, client_addr.port);
+
+  const char *welcome = "Welcome to the chat!";
   socket_send(client_sock, welcome, strlen(welcome));
 
   while (1)
@@ -70,13 +90,22 @@ void *handle_client(void *arg)
       break;
     }
 
-    printf("%s:%d = %s\n", client_addr.host, client_addr.port, response);
-    broadcast(response, bytes_read, &client_addr);
+    if (strcmp(response, "bye") == 0)
+    {
+      char left_msg[128];
+      snprintf(left_msg, sizeof(left_msg), "%s has left the chat.", client->username);
+      broadcast(left_msg, "Server");
+      free(response);
+      break;
+    }
+
+    printf("[%s] %s\n", client->username, response);
+    broadcast(response, client->username);
     free(response);
   }
 
+  printf("%s disconnected\n", client->username);
   remove_client(&client_addr);
-  printf("%s:%d disconnected\n", client_addr.host, client_addr.port);
   socket_destroy(client_sock);
   free(client->address.host);
   free(client);
@@ -119,8 +148,6 @@ int main()
       fprintf(stderr, "Failed to accept connection\n");
       continue;
     }
-
-    printf("%s:%d connected\n", client_addr.host, client_addr.port);
 
     client_info *client = malloc(sizeof(client_info));
     client->socket = client_socket;

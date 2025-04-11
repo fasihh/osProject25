@@ -36,7 +36,7 @@ void *receive_messages(void *arg)
     }
 
     pthread_mutex_lock(&console_mutex);
-    printf("Server: %s\n", response);
+    printf("%s\n", response);
     pthread_mutex_unlock(&console_mutex);
     free(response);
   }
@@ -64,6 +64,13 @@ int main()
   printf("Connected to the server!\n");
   pthread_mutex_unlock(&console_mutex);
 
+  char username[32];
+  printf("Enter your username: ");
+  fgets(username, sizeof(username), stdin);
+  username[strcspn(username, "\n")] = '\0'; // remove newline
+
+  socket_send(client_socket, username, strlen(username));
+
   thread_args args = {
       .socket = client_socket};
 
@@ -90,8 +97,9 @@ int main()
       len--;
     }
 
-    if (strcmp(message, "/exit") == 0)
+    if (strcmp(message, "bye") == 0)
     {
+      socket_send(client_socket, message, len);
       is_running = false;
       break;
     }
