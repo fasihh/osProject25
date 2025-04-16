@@ -119,8 +119,7 @@ char *socket_recv(socket_t *sock, size_t buffer_size, ssize_t *bytes_read)
     return NULL;
   }
 
-  ssize_t received = sock->sock > 0 ? recv(sock->sock, buffer, buffer_size - 1, 0) : sock->fd > 0 ? recv(sock->fd, buffer, buffer_size - 1, 0)
-                                                                                                  : -1;
+  ssize_t received = sock->sock > 0 ? recv(sock->sock, buffer, buffer_size - 1, 0) : sock->fd > 0 ? recv(sock->fd, buffer, buffer_size - 1, 0) : -1;
 
   if (bytes_read)
     *bytes_read = received;

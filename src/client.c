@@ -67,7 +67,7 @@ int main()
   char username[32];
   printf("Enter your username: ");
   fgets(username, sizeof(username), stdin);
-  username[strcspn(username, "\n")] = '\0'; // remove newline
+  username[strcspn(username, "\n")] = '\0';
 
   socket_send(client_socket, username, strlen(username));
 

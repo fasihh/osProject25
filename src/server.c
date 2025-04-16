@@ -81,7 +81,6 @@ void *handle_client(void *arg) {
   client->username[USERNAME_MAX - 1] = '\0';
   free(username);
 
-  // ✅ Add to clients list after username is set
   pthread_mutex_lock(&client_mutex);
   clients.pf_vector_add(&clients, client, sizeof(client_info));
   pthread_mutex_unlock(&client_mutex);
