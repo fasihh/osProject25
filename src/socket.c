@@ -153,19 +153,6 @@ ssize_t socket_send(socket_t *sock, const char *message, size_t length)
   return -1;
 }
 
-int socket_set_non_blocking(socket_t *sock, int status)
-{
-  if (!sock)
-    return -1;
-
-  int flags = fcntl(sock->fd, F_GETFL, 0);
-  if (flags < 0)
-    return -1;
-
-  flags = status ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
-  return fcntl(sock->fd, F_SETFL, flags);
-}
-
 int socket_get_fd(const socket_t *sock)
 {
   return sock ? sock->fd : -1;
