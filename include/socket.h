@@ -39,7 +39,6 @@ int socket_connect(socket_t *sock, const char *host, int port);
 char *socket_recv(socket_t *sock, size_t buffer_size, ssize_t *bytes_read);
 ssize_t socket_send(socket_t *sock, const char *message, size_t length);
 
-int socket_set_non_blocking(socket_t *sock, int status);
 int socket_get_fd(const socket_t *sock);
 void socket_close(socket_t *sock);
 

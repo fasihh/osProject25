@@ -52,8 +52,8 @@ void broadcast(const char *message, const char *sender_name, socket_address *sen
   for (size_t i = 0; i < clients.vector_list.total; i++) {
     client_info *client = clients.pf_vector_get(&clients, i);
     if (client->address.port == sender_addr->port &&
-        strcmp(client->address.host, sender_addr->host) == 0)
-      continue;
+      strcmp(client->address.host, sender_addr->host) == 0)
+    continue;
 
     socket_send(client->socket, formatted_msg, strlen(formatted_msg));
   }
